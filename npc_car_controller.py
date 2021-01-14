@@ -57,10 +57,10 @@ class NPCCarController(Entity):
 
 
     def update(self):
-      
+      pass
         
 
-
+"""
         if self.gravity:
             # # gravity
             ray = raycast(self.world_position+(0,2,0), self.down, ignore=(self,))
@@ -88,8 +88,8 @@ class NPCCarController(Entity):
 
 
     def input(self, key):
-        pass
-    """
+        pass"""
+"""
         if key == 'space':
             self.jump()
 """

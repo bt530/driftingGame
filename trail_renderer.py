@@ -1,11 +1,13 @@
 from ursina import *
-from ursina.shaders import basic_lighting_shader
+#from ursina.shaders import basic_lighting_shader
 class TrailRenderer(Entity):
     def __init__(self, target=None,thickness=5,length=6, **kwargs):
         super().__init__()
         self.thickness=thickness
         self.length=length
         self.target = target
+        if not target:
+            self.target = self
         self.model = Mesh(
             vertices=[self.target.world_position for i in range(self.length)],
             colors=[lerp(color.clear, color.white, i/self.length*2) for i in range(self.length)],
@@ -14,9 +16,8 @@ class TrailRenderer(Entity):
             static=False,
             
         )
-        self.shader=basic_lighting_shader
-        if not target:
-            self.target = self
+        #self.shader=basic_lighting_shader
+
 
         self._t = 0
         self.update_step = .025

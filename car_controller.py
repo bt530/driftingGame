@@ -9,7 +9,7 @@ class CarController(Entity):
         super().__init__()
 
         self.friction=0.999
-        self.acceleration=10
+        self.acceleration=20
         self.maxTurn=100
         self.turnRate=3
         self.maxWheel=90
@@ -20,10 +20,15 @@ class CarController(Entity):
         self.wheelHeight=0.25
         self.maxLean=10
         self.leanCoefficient=2
-        self.smokeParticles=2
+        self.smokeParticles=5
         self.smokeLinger=0.3
         self.smokeRise=1
         self.rubberLinger=2
+        self.minResistance=0.7
+        self.smokeRefresh=0.025
+        self.smokeT=0
+        self.keySensitivity=0#150
+        self.mouseSensitivity=1
 
 
         self.minSS=self.minSpeed**2
@@ -50,6 +55,9 @@ class CarController(Entity):
         self.air_time = 0
 
         self.smoke=[]
+        for i in range(2*round(self.smokeParticles)):
+            e=Entity(parent=scene,position=(0,0,0),scale=(4,1,4),y=-.1,billboard=True,color=color.rgba(0, 0, 0, a=0),model="plane",texture="smoke"+str(random.randint(1,3)),shader=basic_lighting_shader)
+            self.smoke.append(e)
 
 
 
@@ -68,7 +76,8 @@ class CarController(Entity):
 
 
     def update(self):
-        self.camera_pivot.rotation_y += mouse.velocity[0] * self.mouse_sensitivity[1]
+        self.smokeT+=time.dt
+        self.camera_pivot.rotation_y += (self.mouseSensitivity*(mouse.velocity[0] * self.mouse_sensitivity[1]) - time.dt*self.keySensitivity*(held_keys['a'] - held_keys['d']))
         if self.vx**2 + self.vz**2 > self.minSS:
             self.turn=max(min(self.maxTurn*time.dt,self.camera_pivot.rotation_y*self.turnRate*time.dt),-self.maxTurn*time.dt)
 
@@ -77,19 +86,7 @@ class CarController(Entity):
             self.rotation_y+=self.turn
             self.camera_pivot.rotation_y-=self.turn
             
-            if random.randint(1,10000)/abs(self.turn/(self.maxTurn*time.dt)) < 100000*time.dt*self.smokeParticles:
-                e=Entity(parent=scene,position=self.wheel3.world_position,scale=(4,1,4),y=-.1,billboard=True,color=color.rgba(200, 200, 200, a=255*abs(self.turn/(self.maxTurn*time.dt))),model="plane",texture="smoke"+str(random.randint(1,3)),shader=basic_lighting_shader)
-                self.smoke.append(e)
 
-                
-                self.smoke[-1].fade_out(duration=self.smokeLinger)
-                destroy(self.smoke[-1],delay=self.smokeLinger)
-                e=Entity(parent=scene,position=self.wheel4.world_position,scale=(4,1,4),y=-.1,billboard=True,color=color.rgba(200, 200, 200, a=255*abs(self.turn/(self.maxTurn*time.dt))),model="plane",texture="smoke"+str(random.randint(1,3)),shader=basic_lighting_shader)
-                self.smoke.append(e)
-
-                
-                self.smoke[-1].fade_out(duration=self.smokeLinger)
-                destroy(self.smoke[-1],delay=self.smokeLinger)
             """
             e=Entity(parent=scene,rotation_y=self.wheel1.world_rotation_y,position=self.wheel3.world_position,scale=(1,1,0.2),y=0.1,color=color.rgba(0, 0, 0, a=255*abs(self.turn/(self.maxTurn*time.dt))),model="plane",shader=basic_lighting_shader)
             e.fade_out(duration=self.rubberLinger)
@@ -110,15 +107,29 @@ class CarController(Entity):
             destroy(e,delay=self.rubberLinger)"""
             self.trailRenderer3.color=color.rgba(0, 0, 0, a=180*abs(self.turn/(self.maxTurn*time.dt)))
             self.trailRenderer4.color=color.rgba(0, 0, 0, a=180*abs(self.turn/(self.maxTurn*time.dt)))
-            for i in self.smoke:
-                    if i.is_empty():
-                        self.smoke.remove(i)
-                    else:
-                        i.y+=self.smokeRise*time.dt
-                        #i.x+=1*time.dt
-                        i.scale_x=i.scale_x*1.3**time.dt
-                        i.scale_z=i.scale_z*1.3**time.dt
-                        #i.look_at(self.camera_pivot)
+            if self.smokeT>self.smokeRefresh:
+                self.smokeT=0
+                self.smoke[0].world_position=self.wheel3.world_position
+                self.smoke[0].scale=(4,1,4)
+                self.smoke[1].world_position=self.wheel4.world_position
+                self.smoke[1].scale=(4,1,4)
+                if 180*abs(self.turn/(self.maxTurn*time.dt)) > 60:
+                        self.smoke[0].color=color.rgba(200, 200, 200, a=180*abs(self.turn/(self.maxTurn*time.dt)))
+                        self.smoke[1].color=color.rgba(200, 200, 200, a=180*abs(self.turn/(self.maxTurn*time.dt)))
+                else:
+                        self.smoke[0].color=color.rgba(200, 200, 200, a=0)
+                        self.smoke[1].color=color.rgba(200, 200, 200, a=0)
+                self.smoke.append(self.smoke.pop(0))
+                self.smoke.append(self.smoke.pop(0))
+                """
+                for i in self.smoke:
+                        
+
+                    i.y+=self.smokeRise*time.dt
+                    #i.x+=1*time.dt
+                    i.scale_x=i.scale_x*1.3**time.dt
+                    i.scale_z=i.scale_z*1.3**time.dt
+                    #i.look_at(self.camera_pivot)"""
             self.x+=self.vx*time.dt
             self.z+=self.vz*time.dt
         else:
@@ -129,9 +140,9 @@ class CarController(Entity):
         self.ax=(held_keys['w'] - held_keys['s'])*math.sin(math.radians(self.rotation_y))*self.acceleration
         self.az=(held_keys['w'] - held_keys['s'])*math.cos(math.radians(self.rotation_y))*self.acceleration
 
-        self.vx=(self.friction*abs(math.sin(math.radians(self.rotation_y)))**time.dt)*(self.vx+(self.ax*time.dt))
+        self.vx=(self.friction*min(self.minResistance,abs(math.sin(math.radians(self.rotation_y))))**time.dt)*(self.vx+(self.ax*time.dt))
 
-        self.vz=(self.friction*abs(math.cos(math.radians(self.rotation_y)))**time.dt)*(self.vz+(self.az*time.dt))
+        self.vz=(self.friction*min(self.minResistance,abs(math.cos(math.radians(self.rotation_y))))**time.dt)*(self.vz+(self.az*time.dt))
 
 
         try:
@@ -235,7 +246,8 @@ if __name__ == '__main__':
     #sun._light.show_frustum()
     Sky(color=color.rgb(200,200, 220, a=255) )
     #player = FirstPersonController(model='cube', y=1, origin_y=-.5)
-    player=CarController(y=10,x=2)  
+    player=CarController(y=10,x=2)
+
 
 
 

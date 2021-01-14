@@ -47,6 +47,8 @@ def hostConnection(conn,addr):
     global playerIDs
     global playerCars
     global closing
+    global gameSettings
+    first=True
     with conn:
         print('Connected by', addr)
         while True:
@@ -71,12 +73,17 @@ def hostConnection(conn,addr):
                 for i in list(playerIDs.keys()):
                     if i != data[0]:
                         playersToSend.append(";".join(players[playerIDs[i]]))
+                
                 playersToSend=":".join(playersToSend)
                 playersToSend=bytes(playersToSend,encoding="utf-8")
                 
                     
-                    
-                conn.sendall(playersToSend)
+                if first:
+                    #print(":".join(gameSettings),"utf-8")
+                    conn.sendall(bytes(":".join(gameSettings),"utf-8"))
+                    first=False
+                else:
+                    conn.sendall(playersToSend)
             except:
 
                 break
@@ -111,7 +118,7 @@ def clientThread():
     global players
     global playerCars
     global serverIP
-    
+    global gameSettings
     window.title="client"
     #HOST = '127.0.0.1'  # The server's hostname or IP address
     PORT = 65432        # The port used by the server
@@ -125,15 +132,20 @@ def clientThread():
             s.sendall(message)
             data = s.recv(1024)
             data=data.decode(encoding='UTF-8',errors='strict')
+            
+            #print("###"+data+"###")  
             data=data.split(":")
+            if data[0]=="s":
+                gameSettings=data
+                displayMap(gameSettings[1])
 
-
-            while len(players) < len(data) +1:
-                npc=NPCCarController(y=30,x=6)
-                playerCars.append(npc)
-                players.append(players[0])
-            for i in range(len(data)):
-                players[i+1]=data[i].split(";")
+            else:
+                while len(players) < len(data) +1:
+                    npc=NPCCarController(y=30,x=6)
+                    playerCars.append(npc)
+                    players.append(players[0])
+                for i in range(len(data)):
+                    players[i+1]=data[i].split(";")
                 
 
             #print(data)
@@ -195,8 +207,8 @@ def createMap(width=10,height=10,roads=10,biome="city"):
                         startx+=1
     print(layout)
     for i in range(len(layout)):
-        layout[i]=":".join(layout[i])
-    layout=";".join(layout)
+        layout[i]="£".join(layout[i])
+    layout="$".join(layout)
     return layout
             
             
@@ -206,19 +218,35 @@ def createMap(width=10,height=10,roads=10,biome="city"):
     
     pass
 def displayMap(code):
-    code=code.split(";")
+    code=code.split("$")
     for i in range(len(code)):
-        code[i]=code[i].split(":")
+        code[i]=code[i].split("£")
     for i in range(len(code)):
         for j in range(len(code[i])):
             if code[i][j]=="r":
-                ground = Entity(model='plane',texture="road",x=i*10,z=j*10, scale=(10,1,10), collider='box',shader=lit_with_shadows_shader)
+                ground = Entity(model='plane',x=i*10,z=j*10, scale=(10,1,10), shader=lit_with_shadows_shader)
                 ground.model.static=True
+                adjacent=0
+                pairs=0
+                for k in range(-1,2):
+                    for l in range(-1,2):
+                        if code[i+k][j+l]=="r" and not (k==0 and l==0) and abs(k) != abs(l):
+                            adjacent+=1
+                for k in range(0,2):
+                    for l in range(0,2):
+                        if code[i+k][j+l]=="r" and code[i-k][j-l]=="r" and not (k==0 and l==0) and abs(k) != abs(l):
+                            pairs+=1
+                if adjacent > 2 or (adjacent == 2 and pairs == 0):
+                    ground.texture="road clear"
+                else:
+                    ground.texture="road straight"
+                    if code[i+1][j] == "r" or code[i-1][j]=="r":
+                        ground.rotation_y=90
             elif code[i][j]=="g":
-                ground = Entity(model='plane',texture="grass",x=i*10,z=j*10, scale=(10,1,10), collider='box',shader=lit_with_shadows_shader)
+                ground = Entity(model='plane',texture="grass",x=i*10,z=j*10, scale=(10,1,10), shader=lit_with_shadows_shader)
                 ground.model.static=True
             elif code[i][j]=="b":
-                ground = Entity(model='cube',color=color.rgb(60,60,60),x=i*10,z=j*10, scale=(10,1,10), collider='box',shader=lit_with_shadows_shader)
+                ground = Entity(model='cube',color=color.rgb(60,60,60),x=i*10,z=j*10, scale=(10,1,10),shader=lit_with_shadows_shader)
                 ground.model.static=True
                 for k in range(2):
                     for l in range(2):
@@ -229,11 +257,14 @@ def displayMap(code):
     pass
 global players
 global playerCars
+global gameSettings
+gameSettings=["s",""]
 
 def update():
     players[0]=[str(round(player.body.world_x,4)),str(round(player.body.world_y,4)),str(round(player.body.world_z,4)),str(round(player.body.world_rotation_x,4)),str(round(player.body.world_rotation_y,4)),str(round(player.body.world_rotation_z,4))]
     #print(len(players))
     if len(players) >1:
+        #print(players)
         for i in range(1,len(players)):
             if players[i] != "gone" and players[i] != ["g","o","n","e"]:
                 
@@ -257,7 +288,10 @@ while True:
     root.title="drift"
     hostButton=tkinter.Button(root,text="host game",command=startHosting)
     hostButton.pack()
+    hostname = socket.gethostname()    
+    localIP = socket.gethostbyname(hostname)  
     joinEntry=tkinter.Entry(root)
+    joinEntry.insert(0,localIP)
     joinEntry.pack()
     joinButton=tkinter.Button(root,text="join game",command=joinHosting)
     joinButton.pack()
@@ -287,7 +321,9 @@ while True:
     
     if hosting==True:
         window.title="host"
-        code=createMap(width=10,height=10,roads=10)
+        code=createMap(width=15,height=15,roads=50)
+        gameSettings[1]=code
+        displayMap(code)
     elif hosting==False:
         window.title="client"
 
@@ -300,13 +336,14 @@ while True:
     #ground = Entity(model='plane',texture="track", scale=(200,1,200), collider='box',shader=lit_with_shadows_shader)
     #ground = Entity(model='plane', scale=(20,1,20),texture_scale=(200,200), texture='road',  collider='box')
     #my_scene = load_blender_scene('gmae')
-    displayMap(code)
+    
     #ground = Entity(model='plane', scale=(100,1,100), color=color.yellow.tint(-.2), texture='white_cube', texture_scale=(100,100), collider='box',shader=lit_with_shadows_shader)
-    sun = DirectionalLight(y=100,x=80,scale=(400,100,400), rotation=(160,90,0))
+    sun = DirectionalLight(y=50,x=400,z=400,scale=(100,100,100), rotation=(160,45,0))
     sun._light.show_frustum()
     Sky(color=color.rgb(200,200, 220, a=255) )
     #player = FirstPersonController(model='cube', y=1, origin_y=-.5)
-    player=CarController(y=30,x=10,z=10)
+    player=CarController(y=0.1,x=10,z=10)
+    #player.smokeParticles=0.5
     
     print(hosting)
     players=[[str(round(player.body.world_x,4)),str(round(player.body.world_y,4)),str(round(player.body.world_z,4)),str(round(player.body.world_rotation_x,4)),str(round(player.body.world_rotation_y,4)),str(round(player.body.world_rotation_z,4))]]
