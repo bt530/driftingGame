@@ -5,7 +5,7 @@ from car_controller import CarController
 from npc_car_controller import NPCCarController
 from ursina.shaders import basic_lighting_shader
 from ursina.shaders import lit_with_shadows_shader
-from ursina.lights import DirectionalLight
+from lights import DirectionalLight
 import ctypes
 import socket
 import tkinter
@@ -248,13 +248,14 @@ def displayMap(code):
                 ground = Entity(model='plane',texture="grass",x=i*10,z=j*10, scale=(10,1,10), shader=lit_with_shadows_shader)
                 ground.model.static=True
             elif code[i][j]=="b":
-                ground = Entity(model='cube',color=color.rgb(60,60,60),x=i*10,z=j*10, scale=(10,1,10),shader=lit_with_shadows_shader)
+                ground = Entity(model='buildings',color=color.rgb(60,60,60),x=i*10,z=j*10, scale=(5,5,5),shader=lit_with_shadows_shader)
+                ground.rotation_y=random.randint(0,3)*90
                 ground.model.static=True
-                for k in range(2):
-                    for l in range(2):
-                        building=Entity(model='cube',color=color.rgb(120,120,120),x=i*10+k*4-2,z=j*10+l*4-2, scale=(3.8,random.randint(40,200)/10,3.8),shader=lit_with_shadows_shader)
-                        building.model.static=True
-                        pass
+                #for k in range(2):
+                    #for l in range(2):
+                        #building=Entity(model='cube',color=color.rgb(120,120,120),x=i*10+k*4-2,z=j*10+l*4-2, scale=(3.8,random.randint(40,200)/10,3.8),shader=lit_with_shadows_shader)
+                        #building.model.static=True
+                        #pass
     
                 
     pass
@@ -328,7 +329,7 @@ while True:
     player=CarController(y=0.1,x=10,z=10)
     if hosting==True:
         window.title="host"
-        code=createMap(width=15,height=15,roads=50)
+        code=createMap(width=20,height=20,roads=40)
         gameSettings[1]=code
         displayMap(code)
     elif hosting==False:
