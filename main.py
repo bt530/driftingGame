@@ -218,9 +218,11 @@ def createMap(width=10,height=10,roads=10,biome="city"):
     
     pass
 def displayMap(code):
+    global player
     code=code.split("$")
     for i in range(len(code)):
         code[i]=code[i].split("£")
+    player.map=code
     for i in range(len(code)):
         for j in range(len(code[i])):
             if code[i][j]=="r":
@@ -250,14 +252,16 @@ def displayMap(code):
                 ground.model.static=True
                 for k in range(2):
                     for l in range(2):
-                        building=Entity(model='cube',color=color.rgb(120,120,120),x=i*10+k*4-2,z=j*10+l*4-2, scale=(3.8,random.randint(40,200)/10,3.8),shader=lit_with_shadows_shader)
-                        building.model.static=True
+                        #building=Entity(model='cube',color=color.rgb(120,120,120),x=i*10+k*4-2,z=j*10+l*4-2, scale=(3.8,random.randint(40,200)/10,3.8),shader=lit_with_shadows_shader)
+                        #building.model.static=True
                         pass
+    
                 
     pass
 global players
 global playerCars
 global gameSettings
+global player
 gameSettings=["s",""]
 
 def update():
@@ -280,6 +284,9 @@ def update():
                 playerCars[i]="gone"
 
     pass
+
+
+    
 while True:
     
     
@@ -318,7 +325,7 @@ while True:
     #window.debug_menu.enabled = False
     window.size=(width,height)
     #window.borderless = False
-    
+    player=CarController(y=0.1,x=10,z=10)
     if hosting==True:
         window.title="host"
         code=createMap(width=15,height=15,roads=50)
@@ -342,7 +349,7 @@ while True:
     sun._light.show_frustum()
     Sky(color=color.rgb(200,200, 220, a=255) )
     #player = FirstPersonController(model='cube', y=1, origin_y=-.5)
-    player=CarController(y=0.1,x=10,z=10)
+
     #player.smokeParticles=0.5
     
     print(hosting)

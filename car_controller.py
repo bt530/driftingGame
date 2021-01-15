@@ -39,6 +39,7 @@ class CarController(Entity):
         self.origin_y = -.5
         self.camera_pivot = Entity(parent=self, y=2)
         self.cursor = Entity(parent=camera.ui, model='quad', color=color.pink, scale=0, rotation_z=45)
+        self.map=[["r"]]
 
         camera.parent = self.camera_pivot
         camera.position = (0,0,-10)
@@ -76,8 +77,7 @@ class CarController(Entity):
 
 
     def update(self):
-        self.smokeT+=time.dt
-        self.camera_pivot.rotation_y += (self.mouseSensitivity*(mouse.velocity[0] * self.mouse_sensitivity[1]) - time.dt*self.keySensitivity*(held_keys['a'] - held_keys['d']))
+
         if self.vx**2 + self.vz**2 > self.minSS:
             self.turn=max(min(self.maxTurn*time.dt,self.camera_pivot.rotation_y*self.turnRate*time.dt),-self.maxTurn*time.dt)
 
@@ -105,23 +105,8 @@ class CarController(Entity):
             e=Entity(parent=scene,rotation_y=self.wheel1.world_rotation_y,position=self.wheel2.world_position,scale=(1,1,0.2),y=0.1,color=color.rgba(0, 0, 0, a=255*abs(self.turn/(self.maxTurn*time.dt))),model="plane",shader=basic_lighting_shader)
             e.fade_out(duration=self.rubberLinger)
             destroy(e,delay=self.rubberLinger)"""
-            self.trailRenderer3.color=color.rgba(0, 0, 0, a=180*abs(self.turn/(self.maxTurn*time.dt)))
-            self.trailRenderer4.color=color.rgba(0, 0, 0, a=180*abs(self.turn/(self.maxTurn*time.dt)))
-            if self.smokeT>self.smokeRefresh:
-                self.smokeT=0
-                self.smoke[0].world_position=self.wheel3.world_position
-                self.smoke[0].scale=(4,1,4)
-                self.smoke[1].world_position=self.wheel4.world_position
-                self.smoke[1].scale=(4,1,4)
-                if 180*abs(self.turn/(self.maxTurn*time.dt)) > 60:
-                        self.smoke[0].color=color.rgba(200, 200, 200, a=180*abs(self.turn/(self.maxTurn*time.dt)))
-                        self.smoke[1].color=color.rgba(200, 200, 200, a=180*abs(self.turn/(self.maxTurn*time.dt)))
-                else:
-                        self.smoke[0].color=color.rgba(200, 200, 200, a=0)
-                        self.smoke[1].color=color.rgba(200, 200, 200, a=0)
-                self.smoke.append(self.smoke.pop(0))
-                self.smoke.append(self.smoke.pop(0))
-                """
+
+            """
                 for i in self.smoke:
                         
 
@@ -130,10 +115,55 @@ class CarController(Entity):
                     i.scale_x=i.scale_x*1.3**time.dt
                     i.scale_z=i.scale_z*1.3**time.dt
                     #i.look_at(self.camera_pivot)"""
-            self.x+=self.vx*time.dt
-            self.z+=self.vz*time.dt
+            oldmapx=min(len(self.map[0])-1,round((self.x+5)//10))
+            oldmapz=min(len(self.map)-1,round((self.z+5)//10))
+            newmapx=min(len(self.map[0])-1,round((self.x+self.vx*time.dt+5)//10))
+            newmapz=min(len(self.map)-1,round((self.z+self.vz*time.dt+5)//10))
+            if self.map[newmapx][oldmapz] == "r":
+                self.x+=self.vx*time.dt
+                self.minResistance=0.7
+                self.friction=0.999
+                oldmapx=newmapx
+            elif self.map[newmapx][oldmapz] == "g":
+                self.x+=self.vx*time.dt
+                self.minResistance=0.2
+                self.friction=0.9
+                oldmapx=newmapx
+            else:
+                self.vx=self.vx*0.001
+            
+            if self.map[oldmapx][newmapz] == "r":
+                self.minResistance=0.7
+                self.z+=self.vz*time.dt
+                self.friction=0.999
+
+            elif self.map[oldmapx][newmapz] == "g":
+                self.minResistance=0.2
+                self.z+=self.vz*time.dt
+                self.friction=0.9
+            else:
+                self.vz=self.vz*0.001
         else:
             self.body.rotation_x=0
+            self.turn=0
+        self.smokeT+=time.dt
+        self.camera_pivot.rotation_y += (self.mouseSensitivity*(mouse.velocity[0] * self.mouse_sensitivity[1]) - time.dt*self.keySensitivity*(held_keys['a'] - held_keys['d']))
+        self.trailRenderer3.color=color.rgba(0, 0, 0, a=180*abs(self.turn/(self.maxTurn*time.dt)))
+        self.trailRenderer4.color=color.rgba(0, 0, 0, a=180*abs(self.turn/(self.maxTurn*time.dt)))
+        if self.smokeT>self.smokeRefresh:
+            self.smokeT=0
+            self.smoke[0].world_position=self.wheel3.world_position
+            self.smoke[0].scale=(4,1,4)
+            self.smoke[1].world_position=self.wheel4.world_position
+            self.smoke[1].scale=(4,1,4)
+            if 180*abs(self.turn/(self.maxTurn*time.dt)) > 60:
+                    self.smoke[0].color=color.rgba(200, 200, 200, a=180*abs(self.turn/(self.maxTurn*time.dt)))
+                    self.smoke[1].color=color.rgba(200, 200, 200, a=180*abs(self.turn/(self.maxTurn*time.dt)))
+            else:
+                    self.smoke[0].color=color.rgba(200, 200, 200, a=0)
+                    self.smoke[1].color=color.rgba(200, 200, 200, a=0)
+            self.smoke.append(self.smoke.pop(0))
+            self.smoke.append(self.smoke.pop(0))
         self.camera_pivot.rotation_x -= mouse.velocity[1] * self.mouse_sensitivity[0]
         self.camera_pivot.rotation_x= clamp(self.camera_pivot.rotation_x, -5, 30)
 
