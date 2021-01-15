@@ -6,6 +6,7 @@ from ursina.shaders import basic_lighting_shader
 class NPCCarController(Entity):
     def __init__(self, **kwargs):
         super().__init__()
+        self.police=False
 
         self.friction=0.999
         self.acceleration=10
@@ -47,6 +48,8 @@ class NPCCarController(Entity):
 
 
         self.body=Entity(parent=self,rotation_y=90,model="playerbody",texture="Car Texture 1")#,shader=lit_with_shadows_shader)
+        self.policeBody=Entity(parent=self,rotation_y=90,model="police",collision="box",texture="Car Texture 2")#,shader=lit_with_shadows_shader)
+        self.policeBody.visible=False
         self.wheel1=Entity(parent=self,x=self.wheelWidth,z=self.wheelFront,y=self.wheelHeight,rotation_y=-90,model="wheel",texture="Car Texture 1")#,shader=lit_with_shadows_shader)
         self.wheel2=Entity(parent=self,x=-self.wheelWidth,z=self.wheelFront,y=self.wheelHeight,rotation_y=90,model="wheel",texture="Car Texture 1")#,shader=lit_with_shadows_shader)
 
@@ -55,7 +58,10 @@ class NPCCarController(Entity):
         for key, value in kwargs.items():
             setattr(self, key ,value)
 
-
+    def change(self):
+        self.body.visible=self.police
+        self.police=not self.police
+        self.policeBody.visible=self.police
     def update(self):
       pass
         

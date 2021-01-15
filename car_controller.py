@@ -8,6 +8,9 @@ class CarController(Entity):
     def __init__(self, **kwargs):
         super().__init__()
 
+
+        self.police=False
+
         self.friction=0.999
         self.acceleration=20
         self.maxTurn=100
@@ -62,7 +65,9 @@ class CarController(Entity):
 
 
 
-        self.body=Entity(parent=self,rotation_y=90,model="playerbody",texture="Car Texture 1")#,shader=lit_with_shadows_shader)
+        self.body=Entity(parent=self,rotation_y=90,model="playerbody",collision="box",texture="Car Texture 1")#,shader=lit_with_shadows_shader)
+        self.policeBody=Entity(parent=self,rotation_y=90,model="police",collision="box",texture="Car Texture 2")#,shader=lit_with_shadows_shader)
+        self.policeBody.visible=False
         self.wheel1=Entity(parent=self,x=self.wheelWidth,z=self.wheelFront,y=self.wheelHeight,rotation_y=-90,model="wheel",texture="Car Texture 1")#,shader=lit_with_shadows_shader)
         self.wheel2=Entity(parent=self,x=-self.wheelWidth,z=self.wheelFront,y=self.wheelHeight,rotation_y=90,model="wheel",texture="Car Texture 1")#,shader=lit_with_shadows_shader)
 
@@ -74,6 +79,10 @@ class CarController(Entity):
         self.trailRenderer4 = trail_renderer.TrailRenderer(target=self.wheel4base,thickness=40,length=20,shader=basic_lighting_shader)
         for key, value in kwargs.items():
             setattr(self, key ,value)
+    def change(self):
+        self.body.visible=self.police
+        self.police=not self.police
+        self.policeBody.visible=self.police
 
 
     def update(self):
@@ -115,10 +124,10 @@ class CarController(Entity):
                     i.scale_x=i.scale_x*1.3**time.dt
                     i.scale_z=i.scale_z*1.3**time.dt
                     #i.look_at(self.camera_pivot)"""
-            oldmapx=min(len(self.map[0])-1,round((self.x+5)//10))
-            oldmapz=min(len(self.map)-1,round((self.z+5)//10))
-            newmapx=min(len(self.map[0])-1,round((self.x+self.vx*time.dt+5)//10))
-            newmapz=min(len(self.map)-1,round((self.z+self.vz*time.dt+5)//10))
+            oldmapx=min(len(self.map[0])-1,abs(round((self.x+5)//10)))
+            oldmapz=min(len(self.map)-1,abs(round((self.z+5)//10)))
+            newmapx=min(len(self.map[0])-1,abs(round((self.x+self.vx*time.dt+5)//10)))
+            newmapz=min(len(self.map)-1,abs(round((self.z+self.vz*time.dt+5)//10)))
             if self.map[newmapx][oldmapz] == "r":
                 self.x+=self.vx*time.dt
                 self.minResistance=0.7
@@ -225,10 +234,10 @@ class CarController(Entity):
 
     def input(self, key):
         pass
-    """
+   
         if key == 'space':
-            self.jump()
-"""
+            self.change()
+
 
 
 

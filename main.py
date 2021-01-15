@@ -63,16 +63,16 @@ def hostConnection(conn,addr):
                 data=data.split(";")
                 currentID=data[0]
                 if data[0] in list(playerIDs.keys()):
-                    players[playerIDs[data[0]]]=data[1:]
+                    players[playerIDs[data[0]]]=data
                 else:
                     npc=NPCCarController(y=30,x=6)
                     playerCars.append(npc)
                     playerIDs[data[0]]=len(players)
-                    players.append(data[1:])
+                    players.append(data)
                 playersToSend=[]
                 for i in list(playerIDs.keys()):
                     if i != data[0]:
-                        playersToSend.append(";".join(players[playerIDs[i]]))
+                        playersToSend.append(";".join([i]+players[playerIDs[i]]))
                 
                 playersToSend=":".join(playersToSend)
                 playersToSend=bytes(playersToSend,encoding="utf-8")
@@ -127,7 +127,7 @@ def clientThread():
 
         s.connect((serverIP, PORT))
         while True:
-            message=";".join([identification,str(round(player.body.world_x,4)),str(round(player.body.world_y,4)),str(round(player.body.world_z,4)),str(round(player.body.world_rotation_x,4)),str(round(player.body.world_rotation_y,4)),str(round(player.body.world_rotation_z,4))])
+            message=";".join([identification]+players[0])#,str(round(player.body.world_x,4)),str(round(player.body.world_y,4)),str(round(player.body.world_z,4)),str(round(player.body.world_rotation_x,4)),str(round(player.body.world_rotation_y,4)),str(round(player.body.world_rotation_z,4))])
             message=bytes(message,encoding="UTF-8")
             s.sendall(message)
             data = s.recv(1024)
@@ -266,27 +266,29 @@ global player
 gameSettings=["s",""]
 
 def update():
-    players[0]=[str(round(player.body.world_x,4)),str(round(player.body.world_y,4)),str(round(player.body.world_z,4)),str(round(player.body.world_rotation_x,4)),str(round(player.body.world_rotation_y,4)),str(round(player.body.world_rotation_z,4))]
+    players[0]=[str(round(player.body.world_x,4)),str(round(player.body.world_y,4)),str(round(player.body.world_z,4)),str(round(player.body.world_rotation_y,4)),str(player.police)]
     #print(len(players))
     if len(players) >1:
         #print(players)
         for i in range(1,len(players)):
             if players[i] != "gone" and players[i] != ["g","o","n","e"]:
                 
-                playerCars[i].x=float(players[i][0])
-                playerCars[i].y=float(players[i][1])
-                playerCars[i].z=float(players[i][2])
+                playerCars[i].x=float(players[i][1])
+                playerCars[i].y=float(players[i][2])
+                playerCars[i].z=float(players[i][3])
 
                 #playerCars[i].rotation_x=float(players[i][3])
                 playerCars[i].rotation_y=float(players[i][4])-90
                 #playerCars[i].rotation_z=float(players[i][5])
+                if str(playerCars[i].police) != players[i][5]:
+                    playerCars[i].change()
             elif playerCars[i] != "gone":
                 destroy(playerCars[i])
                 playerCars[i]="gone"
 
     pass
 
-
+mode="full"
     
 while True:
     
@@ -316,7 +318,8 @@ while True:
     # window.vsync = False
     #application.development_mode = False
     app = Ursina()
-    #window.position=(0,20)
+    #
+
     window.position=(0,0)
     app.development_mode  = True
     window.color=color.black
@@ -324,12 +327,17 @@ while True:
     window.fps_counter.enabled = True
     window.cog_button.enabled=False
     #window.debug_menu.enabled = False
-    window.size=(width,height)
-    #window.borderless = False
+    
+    if mode=="test":
+        window.position=(0,20)
+        window.borderless = False
+    else:
+        window.size=(width,height)
+    #
     player=CarController(y=0.1,x=10,z=10)
     if hosting==True:
         window.title="host"
-        code=createMap(width=20,height=20,roads=40)
+        code=createMap(width=10,height=10,roads=10)
         gameSettings[1]=code
         displayMap(code)
     elif hosting==False:
