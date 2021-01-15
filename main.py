@@ -252,8 +252,8 @@ def displayMap(code):
                 ground.model.static=True
                 for k in range(2):
                     for l in range(2):
-                        #building=Entity(model='cube',color=color.rgb(120,120,120),x=i*10+k*4-2,z=j*10+l*4-2, scale=(3.8,random.randint(40,200)/10,3.8),shader=lit_with_shadows_shader)
-                        #building.model.static=True
+                        building=Entity(model='cube',color=color.rgb(120,120,120),x=i*10+k*4-2,z=j*10+l*4-2, scale=(3.8,random.randint(40,200)/10,3.8),shader=lit_with_shadows_shader)
+                        building.model.static=True
                         pass
     
                 
