@@ -41,7 +41,7 @@ class CarController(Entity):
         self.vz=0
         self.origin_y = -.5
         self.camera_pivot = Entity(parent=self, y=2)
-        self.cursor = Entity(parent=camera.ui, model='quad', color=color.pink, scale=0, rotation_z=45)
+        self.cursor = Entity(parent=camera.ui,  color=color.pink, scale=0, rotation_z=45)
         self.map=[["r"]]
 
         camera.parent = self.camera_pivot
@@ -65,8 +65,9 @@ class CarController(Entity):
 
 
 
-        self.body=Entity(parent=self,rotation_y=90,model="playerbody",collision="box",texture="Car Texture 1")#,shader=lit_with_shadows_shader)
-        self.policeBody=Entity(parent=self,rotation_y=90,model="police",collision="box",texture="Car Texture 2")#,shader=lit_with_shadows_shader)
+        self.body=Entity(parent=self,rotation_y=90,)#,shader=lit_with_shadows_shader)
+        self.robberBody=Entity(parent=self.body,model="playerbody",collider="box",texture="Car Texture 1")#shader=lit_with_shadows_shader)
+        self.policeBody=Entity(parent=self.body,model="police",texture="Car Texture 2")#,shader=lit_with_shadows_shader)
         self.policeBody.visible=False
         self.wheel1=Entity(parent=self,x=self.wheelWidth,z=self.wheelFront,y=self.wheelHeight,rotation_y=-90,model="wheel",texture="Car Texture 1")#,shader=lit_with_shadows_shader)
         self.wheel2=Entity(parent=self,x=-self.wheelWidth,z=self.wheelFront,y=self.wheelHeight,rotation_y=90,model="wheel",texture="Car Texture 1")#,shader=lit_with_shadows_shader)
@@ -80,7 +81,7 @@ class CarController(Entity):
         for key, value in kwargs.items():
             setattr(self, key ,value)
     def change(self):
-        self.body.visible=self.police
+        self.robberBody.visible=self.police
         self.police=not self.police
         self.policeBody.visible=self.police
 
@@ -152,6 +153,8 @@ class CarController(Entity):
                 self.friction=0.9
             else:
                 self.vz=self.vz*0.001
+                self.body.rotation_x=0
+                self.turn=0
         else:
             self.body.rotation_x=0
             self.turn=0
@@ -200,15 +203,15 @@ class CarController(Entity):
             pass
         
 
-
+        """
         if self.gravity:
             # # gravity
             ray = raycast(self.world_position+(0,2,0), self.down, ignore=(self,))
             try:
                 self.y = ray.world_point[1]
             except:
-                pass
-            """
+                pass"""
+        """
             # ray = boxcast(self.world_position+(0,2,0), self.down, ignore=(self,))
 
             if ray.distance <= 2.1:

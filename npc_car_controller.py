@@ -47,8 +47,8 @@ class NPCCarController(Entity):
 
 
 
-        self.body=Entity(parent=self,rotation_y=90,model="playerbody",texture="Car Texture 1")#,shader=lit_with_shadows_shader)
-        self.policeBody=Entity(parent=self,rotation_y=90,model="police",collision="box",texture="Car Texture 2")#,shader=lit_with_shadows_shader)
+        self.body=Entity(parent=self,rotation_y=90,model="playerbody",collider="box",texture="Car Texture 1")#,shader=lit_with_shadows_shader)
+        self.policeBody=Entity(parent=self,rotation_y=90,model="police",texture="Car Texture 2")#,shader=lit_with_shadows_shader)
         self.policeBody.visible=False
         self.wheel1=Entity(parent=self,x=self.wheelWidth,z=self.wheelFront,y=self.wheelHeight,rotation_y=-90,model="wheel",texture="Car Texture 1")#,shader=lit_with_shadows_shader)
         self.wheel2=Entity(parent=self,x=-self.wheelWidth,z=self.wheelFront,y=self.wheelHeight,rotation_y=90,model="wheel",texture="Car Texture 1")#,shader=lit_with_shadows_shader)

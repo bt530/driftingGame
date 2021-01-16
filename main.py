@@ -54,25 +54,25 @@ def hostConnection(conn,addr):
         while True:
 
             try:
-                
+                #time.sleep(4)
                 data = conn.recv(1024)
-                if not data:
-                    break
+                #if not data:
+                    #break
                 data=data.decode(encoding='UTF-8',errors='strict')
                 #print(data)
                 data=data.split(";")
                 currentID=data[0]
                 if data[0] in list(playerIDs.keys()):
                     players[playerIDs[data[0]]]=data
-                else:
+                elif data[0] != identification:
                     npc=NPCCarController(y=30,x=6)
                     playerCars.append(npc)
                     playerIDs[data[0]]=len(players)
                     players.append(data)
                 playersToSend=[]
                 for i in list(playerIDs.keys()):
-                    if i != data[0]:
-                        playersToSend.append(";".join([i]+players[playerIDs[i]]))
+                    
+                    playersToSend.append(";".join(players[playerIDs[i]]))
                 
                 playersToSend=":".join(playersToSend)
                 playersToSend=bytes(playersToSend,encoding="utf-8")
@@ -127,12 +127,13 @@ def clientThread():
 
         s.connect((serverIP, PORT))
         while True:
-            message=";".join([identification]+players[0])#,str(round(player.body.world_x,4)),str(round(player.body.world_y,4)),str(round(player.body.world_z,4)),str(round(player.body.world_rotation_x,4)),str(round(player.body.world_rotation_y,4)),str(round(player.body.world_rotation_z,4))])
+            message=";".join(players[0])#,str(round(player.body.world_x,4)),str(round(player.body.world_y,4)),str(round(player.body.world_z,4)),str(round(player.body.world_rotation_x,4)),str(round(player.body.world_rotation_y,4)),str(round(player.body.world_rotation_z,4))])
             message=bytes(message,encoding="UTF-8")
             s.sendall(message)
             data = s.recv(1024)
+            #print(data)
             data=data.decode(encoding='UTF-8',errors='strict')
-            
+            #time.sleep(4)
             #print("###"+data+"###")  
             data=data.split(":")
             if data[0]=="s":
@@ -140,10 +141,10 @@ def clientThread():
                 displayMap(gameSettings[1])
 
             else:
-                while len(players) < len(data) +1:
+                while len(players) < len(data)+1:
                     npc=NPCCarController(y=30,x=6)
                     playerCars.append(npc)
-                    players.append(players[0])
+                    players.append(["0"]+players[0][1:])
                 for i in range(len(data)):
                     players[i+1]=data[i].split(";")
                 
@@ -217,8 +218,10 @@ def createMap(width=10,height=10,roads=10,biome="city"):
             
     
     pass
+buildingTiles=[]
 def displayMap(code):
     global player
+    buldingTiles=[]
     code=code.split("$")
     for i in range(len(code)):
         code[i]=code[i].split("£")
@@ -248,9 +251,12 @@ def displayMap(code):
                 ground = Entity(model='plane',texture="grass",x=i*10,z=j*10, scale=(10,1,10), shader=lit_with_shadows_shader)
                 ground.model.static=True
             elif code[i][j]=="b":
-                ground = Entity(model='buildings',color=color.rgb(60,60,60),x=i*10,z=j*10, scale=(5,5,5),shader=lit_with_shadows_shader)
+                ground = Entity(model='buildings',color=color.rgb(60,60,60),x=i*10,z=j*10, scale=(5,5,5))#,shader=lit_with_shadows_shader)
                 ground.rotation_y=random.randint(0,3)*90
-                ground.model.static=True
+                
+                #ground.model.static=True
+                buildingTiles.append(ground)
+
                 #for k in range(2):
                     #for l in range(2):
                         #building=Entity(model='cube',color=color.rgb(120,120,120),x=i*10+k*4-2,z=j*10+l*4-2, scale=(3.8,random.randint(40,200)/10,3.8),shader=lit_with_shadows_shader)
@@ -264,27 +270,113 @@ global playerCars
 global gameSettings
 global player
 gameSettings=["s",""]
+playerPings={}
+playerOldPings={}
+playerProgress={}
+playerOldData={}
+playerNewData={}
 
+distanceMarker=Entity()
 def update():
-    players[0]=[str(round(player.body.world_x,4)),str(round(player.body.world_y,4)),str(round(player.body.world_z,4)),str(round(player.body.world_rotation_y,4)),str(player.police)]
+    
+    players[0]=[identification,str(round(player.body.world_x,4)),str(round(player.body.world_y,4)),str(round(player.body.world_z,4)),str(round(player.body.world_rotation_y,4)),str(player.police),str(time.time()),players[0][7]]
     #print(len(players))
+    for i in buildingTiles:
+        #print(distance(i,player.camera_pivot))
+        distanceMarker.world_position=camera.world_position
+        i.y=-20+min(2*distance_xz(i,distanceMarker)+distanceMarker.world_y,20)
+        #i.color=color.rgba(60, 60, 60, a=min(20*distance(i,distanceMarker),255))
     if len(players) >1:
         #print(players)
+        #print(playerCars)
+        #print(players)
         for i in range(1,len(players)):
-            if players[i] != "gone" and players[i] != ["g","o","n","e"]:
-                
-                playerCars[i].x=float(players[i][1])
-                playerCars[i].y=float(players[i][2])
-                playerCars[i].z=float(players[i][3])
+            if players[i][0] != identification:
+                if players[i] != "gone" and playerCars[i] != "gone"  and players[i] != ["g","o","n","e"]:
+                    if i not in list(playerPings.keys()):
+                        
+                        playerCars[i].x=float(players[i][1])
+                        playerCars[i].y=float(players[i][2])
+                        playerCars[i].z=float(players[i][3])
+                        playerCars[i].rotation_y=float(players[i][4])-90
+                        playerPings[i]=players[i][6]
+                        playerOldPings[i]=str(float(players[i][6])-1)
+                        playerProgress[i]=0
+                        playerOldData[i]=[]
+                        playerNewData[i]=[]
+                        for j in players[i]:
+                            playerNewData[i].append(j)
+                        for j in playerNewData[i]:
+                            playerOldData[i].append(j)
+                    elif playerPings[i]!=players[i][6]:
+                        #d=float(players[i][6])-float(playerPings[i])
+                        #print(d)
+                        
+                        playerOldData[i]=[]
 
-                #playerCars[i].rotation_x=float(players[i][3])
-                playerCars[i].rotation_y=float(players[i][4])-90
-                #playerCars[i].rotation_z=float(players[i][5])
-                if str(playerCars[i].police) != players[i][5]:
-                    playerCars[i].change()
-            elif playerCars[i] != "gone":
-                destroy(playerCars[i])
-                playerCars[i]="gone"
+                        for j in playerNewData[i]:
+                            playerOldData[i].append(j)
+                        playerNewData[i]=[]
+                        for j in players[i]:
+                            playerNewData[i].append(j)
+                        if float(playerNewData[i][4])-float(playerOldData[i][4]) > 180:
+                            playerNewData[i][4]=str(float(playerNewData[i][4])-360)
+                        elif float(playerNewData[i][4])-float(playerOldData[i][4]) < -180:
+                            
+                            playerNewData[i][4]=str(float(playerNewData[i][4])+360)
+                        playerOldPings[i]=playerPings[i]
+                        playerPings[i]=players[i][6]
+                        playerProgress[i]=0
+
+                    #if float(playerPings[i])-float(playerOldPings[i]) > 0:
+                    playerProgress[i]+=time.dt
+                    #print((playerProgress[i]/(float(playerPings[i])-float(playerOldPings[i]))))
+                    #print(playerCars[i].x,(playerProgress[i]/(float(playerPings[i])-float(playerOldPings[i]))))
+                    #print(playerNewData)
+                    #print(playerOldData)
+                    playerCars[i].x=float(playerOldData[i][1])+(float(playerNewData[i][1])-float(playerOldData[i][1]))*(playerProgress[i]/(float(playerPings[i])-float(playerOldPings[i])))
+                    playerCars[i].y=float(playerOldData[i][2])+(float(playerNewData[i][2])-float(playerOldData[i][2]))*(playerProgress[i]/(float(playerPings[i])-float(playerOldPings[i])))
+                    playerCars[i].z=float(playerOldData[i][3])+(float(playerNewData[i][3])-float(playerOldData[i][3]))*(playerProgress[i]/(float(playerPings[i])-float(playerOldPings[i])))
+                    playerCars[i].rotation_y=float(playerOldData[i][4])+(float(playerNewData[i][4])-float(playerOldData[i][4]))*(playerProgress[i]/(float(playerPings[i])-float(playerOldPings[i])))-90
+                    touching=False
+                    if not playerCars[i].police and player.police:
+                        #print(playerCars[i].body.intersects(traverse_target=player.policeBody).distance)
+                        if playerCars[i].body.intersects(traverse_target=player.robberBody).hit:
+                            
+                            #print("touching")
+                            players[0][7]=players[i][0]
+                            touching=True
+                    if not touching:
+                        players[0][7]=""
+                    if players[i][7]==identification:
+                        if not player.police:
+                            player.change()
+                            
+                    """else:
+                        playerCars[i].x=float(players[i][1])
+                        playerCars[i].y=float(players[i][2])
+                        playerCars[i].z=float(players[i][3])
+                        playerCars[i].rotation_y=float(players[i][4])-90"""
+
+                        
+
+                    #playerCars[i].rotation_x=float(players[i][3])
+                    
+                    #playerCars[i].rotation_z=float(players[i][5])
+                    #print(playerCars)
+                    #print(playerCars[i])
+                    
+                    if str(playerCars[i].police) != players[i][5]:
+                        playerCars[i].change()
+
+                elif playerCars[i] != "gone":
+                    destroy(playerCars[i])
+                    print("destroying cos dc")
+                    playerCars[i]="gone"
+    
+            elif playerCars[i] != "gone" :
+                    destroy(playerCars[i])
+                    playerCars[i]="gone"
 
     pass
 
@@ -334,14 +426,16 @@ while True:
     else:
         window.size=(width,height)
     #
-    player=CarController(y=0.1,x=10,z=10)
+    
     if hosting==True:
         window.title="host"
+        player=CarController(y=0.1,x=10,z=10)
         code=createMap(width=10,height=10,roads=10)
         gameSettings[1]=code
         displayMap(code)
     elif hosting==False:
         window.title="client"
+        player=CarController(y=0.1,x=10,z=10)
 
 
 
@@ -353,8 +447,8 @@ while True:
     #ground = Entity(model='plane', scale=(20,1,20),texture_scale=(200,200), texture='road',  collider='box')
     #my_scene = load_blender_scene('gmae')
     
-    #ground = Entity(model='plane', scale=(100,1,100), color=color.yellow.tint(-.2), texture='white_cube', texture_scale=(100,100), collider='box',shader=lit_with_shadows_shader)
-    sun = DirectionalLight(y=50,x=400,z=400,scale=(100,100,100), rotation=(160,45,0))
+    ground = Entity(model='plane',y=-0.1, scale=(1000,1,1000), color=color.rgb(60,60,60), texture='white_cube', texture_scale=(1000,1000))#, collider='box')#,shader=lit_with_shadows_shader)
+    sun = DirectionalLight(y=50,x=400,z=400,scale=(100,100,100), rotation=(160,30,0))
     sun._light.show_frustum()
     Sky(color=color.rgb(200,200, 220, a=255) )
     #player = FirstPersonController(model='cube', y=1, origin_y=-.5)
@@ -362,8 +456,9 @@ while True:
     #player.smokeParticles=0.5
     
     print(hosting)
-    players=[[str(round(player.body.world_x,4)),str(round(player.body.world_y,4)),str(round(player.body.world_z,4)),str(round(player.body.world_rotation_x,4)),str(round(player.body.world_rotation_y,4)),str(round(player.body.world_rotation_z,4))]]
-    playerCars=["None"]
+    players=[[identification,str(round(player.body.world_x,4)),str(round(player.body.world_y,4)),str(round(player.body.world_z,4)),str(round(player.body.world_rotation_y,4)),str(player.police),str(time.time()),""]]
+
+    playerCars=["gone"]
     if hosting==True:
         window.title="host"
         x = threading.Thread(target=hostThread,daemon=True)
